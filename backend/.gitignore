@@ -25,6 +25,13 @@ generated/*.pdf
 downloads/
 downloads/*.pdf
 
+# PDF Storage and User Data
+storage/
+storage/pdfs/
+storage/users/
+storage/*.csv
+storage/*.json
+
 # Logs
 logs/
 *.log

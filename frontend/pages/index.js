@@ -108,14 +108,15 @@ export default function Home() {
   };
 
   const handleAIDownloadPDF = async () => {
+    console.log("handleAIDownloadPDF called");
     if (!aiDocument) {
       alert("No PDF available. Please generate a quote first.");
       return;
     }
-
+    console.log("Downloading AI PDF from:", aiDocument);
     try {
       const response = await fetch(
-        `http://localhost:4000${aiDocument.downloadUrl}`
+        `http://localhost:4000/api/quotes${aiDocument.downloadUrl}`
       );
 
       if (!response.ok) {
@@ -191,10 +192,9 @@ export default function Home() {
       alert("No PDF available. Please generate a quote first.");
       return;
     }
-
     try {
       const response = await fetch(
-        `http://localhost:4000${quote.document.downloadUrl}`
+        `http://localhost:4000/api/quotes${quote.document.downloadUrl}`
       );
 
       if (!response.ok) {

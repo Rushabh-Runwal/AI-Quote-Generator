@@ -64,6 +64,7 @@ class FoxitService {
         size: pdfBuffer.length,
         mimeType: "application/pdf",
         generatedAt: new Date().toISOString(),
+        buffer: pdfBuffer, // Include the buffer for compression workflow
       };
     } catch (error) {
       console.error("Foxit PDF Generation Error:", error);
@@ -206,59 +207,6 @@ class FoxitService {
         console.error("Foxit API Setup Error:", error.message);
         throw new Error(`Error setting up Foxit API call: ${error.message}`);
       }
-    }
-  }
-
-  // Health check
-  async healthCheck() {
-    try {
-      // Check if template file exists
-      const templateExists = await fs.pathExists(this.templatePath);
-
-      // Check if generated directory exists and is writable
-      await fs.ensureDir(this.generatedDir);
-      const testFile = path.join(this.generatedDir, "test-write.tmp");
-      await fs.writeFile(testFile, "test");
-      await fs.remove(testFile);
-
-      return {
-        status: "healthy",
-        details: {
-          templateExists,
-          generatedDirWritable: true,
-          clientConfigured: !!(this.clientId && this.clientSecret),
-          apiEndpoint: this.baseURL,
-        },
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error) {
-      return {
-        status: "unhealthy",
-        error: error.message,
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }
-
-  // Cleanup old generated files
-  async cleanupOldFiles(maxAgeHours = 168) {
-    // 7 days default
-    try {
-      const files = await fs.readdir(this.generatedDir);
-      const now = Date.now();
-      const maxAge = maxAgeHours * 60 * 60 * 1000;
-
-      for (const file of files) {
-        const filePath = path.join(this.generatedDir, file);
-        const stats = await fs.stat(filePath);
-
-        if (now - stats.mtime.getTime() > maxAge) {
-          await fs.remove(filePath);
-          console.log(`Cleaned up old file: ${file}`);
-        }
-      }
-    } catch (error) {
-      console.error("Error during cleanup:", error);
     }
   }
 }

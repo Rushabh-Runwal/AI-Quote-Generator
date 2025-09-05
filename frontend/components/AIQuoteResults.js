@@ -309,13 +309,6 @@ const AIQuoteResults = ({ quote, document, aiInsights, onDownloadPDF }) => {
             <FaCheckCircle size={20} color="#059669" />
             <div>
               <h4>Your Quote is Ready!</h4>
-              <p>
-                Professional PDF generated •{" "}
-                {Math.round(document.compressedSize / 1024)}KB •
-                {document.compressionStatus === "compressed"
-                  ? " Optimized"
-                  : " Standard"}
-              </p>
             </div>
           </div>
           <button onClick={onDownloadPDF} className="download-btn">

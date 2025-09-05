@@ -1,6 +1,6 @@
 const quoteService = require("../services/quoteService");
 const aiService = require("../services/AiService");
-const foxitService = require("../services/foxitService");
+const PDFService = require("../services/enhancedPDFService");
 
 // Build Quote function - centralizes quote generation logic
 async function buildQuote(
@@ -140,23 +140,29 @@ async function quotesRoutes(fastify, options) {
 
         console.log("Quote built successfully, Quote ID:", quote.quoteId);
 
-        // Step 3: Generate PDF with Foxit API
-        console.log("Generating PDF with Foxit API...");
-        const document = await foxitService.generateQuotePDF({
+        // Step 3: Generate and Store PDF with Service
+        console.log("Generating and storing PDF...");
+        const pdfResult = await PDFService.generateCompressAndStorePDF({
           quote,
           aiInsights: aiAnalysis,
           userDescription,
         });
 
-        console.log("PDF generation completed:", document.filename);
-
-        // For now, we'll skip PDF generation and just return the quote
         const processingTime = Date.now() - startTime;
 
         return reply.send({
           success: true,
           quote,
-          document,
+          document: {
+            filename: `quote_${quote.quoteId}_${
+              new Date().toISOString().split("T")[0]
+            }.pdf`,
+            size: pdfResult.pdf.originalSize,
+            storedAt: pdfResult.storage.pdfPath,
+            downloadUrl: `/download-pdf/${quote.quoteId}`,
+            buffer: pdfResult.pdfBuffer,
+            compressionStatus: pdfResult.compressionStatus,
+          },
           aiInsights: {
             recommendedServices: aiAnalysis.recommendedServices,
             reasoning: aiAnalysis.reasoning,
@@ -165,7 +171,7 @@ async function quotesRoutes(fastify, options) {
           },
           processingTime,
           message:
-            "Quote and PDF generated successfully using AI recommendations",
+            "Quote and PDF generated successfully using AI recommendations. Compression is processing in background.",
         });
       } catch (error) {
         if (error.name === "IncredibleAIError") {
@@ -210,7 +216,6 @@ async function quotesRoutes(fastify, options) {
         console.log("Client:", clientInfo.name);
         console.log("============================");
 
-        // Step 1: Build the quote using selected services
         console.log("Building quote with manually selected services...");
         const quote = await buildQuote(
           selectedServices,
@@ -221,25 +226,37 @@ async function quotesRoutes(fastify, options) {
 
         console.log("Quote built successfully, Quote ID:", quote.quoteId);
 
-        // Step 2: Generate PDF with Foxit API
-        console.log("Generating PDF with Foxit API...");
-        const document = await foxitService.generateQuotePDF({
+        // Step 2: Generate and Store PDF with  Service
+        console.log("Generating and storing PDF...");
+        const pdfResult = await PDFService.generateCompressAndStorePDF({
           quote,
+          aiInsights: null,
           userDescription: null,
         });
 
-        console.log("PDF generation completed:", document.filename);
+        console.log("Enhanced PDF workflow completed:");
+        console.log("- PDF size:", pdfResult.pdf.originalSize, "bytes");
+        console.log("- Stored at:", pdfResult.storage.pdfPath);
+        console.log("- Compression status:", pdfResult.compressionStatus);
 
-        // For now, we'll skip PDF generation and just return the quote
         const processingTime = Date.now() - startTime;
 
         return reply.send({
           success: true,
           quote,
-          document,
+          document: {
+            filename: `quote_${quote.quoteId}_${
+              new Date().toISOString().split("T")[0]
+            }.pdf`,
+            size: pdfResult.pdf.originalSize,
+            storedAt: pdfResult.storage.pdfPath,
+            downloadUrl: `/download-pdf/${quote.quoteId}`,
+            buffer: pdfResult.pdfBuffer,
+            compressionStatus: pdfResult.compressionStatus,
+          },
           processingTime,
           message:
-            "Quote and PDF generated successfully with manual service selection",
+            "Quote and PDF generated successfully with manual service selection. Compression is processing in background.",
         });
       } catch (error) {
         if (error.name === "ValidationError") {
@@ -300,6 +317,104 @@ async function quotesRoutes(fastify, options) {
         currency: "USD",
       },
     });
+  });
+
+  // Get user's quote history
+  fastify.get("/user/:email/history", async (request, reply) => {
+    try {
+      const { email } = request.params;
+
+      if (!email || !email.includes("@")) {
+        return reply.status(400).send({
+          error: "Invalid Email",
+          message: "Please provide a valid email address",
+        });
+      }
+
+      const quotes = await PDFService.getUserQuoteHistory(email);
+
+      return reply.send({
+        success: true,
+        userEmail: email,
+        quotesCount: quotes.length,
+        quotes: quotes,
+      });
+    } catch (error) {
+      fastify.log.error("Get User Quote History Error:", error);
+      return reply.status(500).send({
+        error: "Failed to retrieve quote history",
+        message: error.message,
+      });
+    }
+  });
+
+  // Download PDF by quote ID - serves directly from generated folder
+  fastify.get("/download-pdf/:quoteId", async (request, reply) => {
+    try {
+      const { quoteId } = request.params;
+      const path = require("path");
+      const fs = require("fs-extra");
+
+      // Look for PDF file in generated folder with the quote ID pattern
+      const generatedDir = path.join(__dirname, "../generated");
+      const files = await fs.readdir(generatedDir);
+
+      // Find file that matches the quote ID pattern
+      const pdfFile = files.find(
+        (file) => file.includes(quoteId) && file.endsWith(".pdf")
+      );
+
+      if (!pdfFile) {
+        return reply.status(404).send({
+          error: "PDF Not Found",
+          message: `PDF for quote ${quoteId} was not found in generated folder`,
+        });
+      }
+
+      const pdfPath = path.join(generatedDir, pdfFile);
+      const pdfExists = await fs.pathExists(pdfPath);
+
+      if (!pdfExists) {
+        return reply.status(404).send({
+          error: "PDF File Not Found",
+          message: "PDF file has been removed or is not accessible",
+        });
+      }
+
+      const pdfBuffer = await fs.readFile(pdfPath);
+
+      // Set headers for PDF download
+      reply
+        .header("Content-Type", "application/pdf")
+        .header("Content-Disposition", `attachment; filename="${pdfFile}"`)
+        .header("Content-Length", pdfBuffer.length)
+        .send(pdfBuffer);
+    } catch (error) {
+      console.log("Download PDF Error:", error);
+      return reply.status(500).send({
+        error: "Failed to download PDF",
+        message: error.message,
+      });
+    }
+  });
+
+  // Get storage statistics
+  fastify.get("/admin/storage-stats", async (request, reply) => {
+    try {
+      const stats = await PDFService.getStorageStatistics();
+
+      return reply.send({
+        success: true,
+        statistics: stats,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      fastify.log.error("Get Storage Stats Error:", error);
+      return reply.status(500).send({
+        error: "Failed to retrieve storage statistics",
+        message: error.message,
+      });
+    }
   });
 }
 

@@ -10,9 +10,15 @@ require("dotenv").config();
 
 // Register plugins
 async function registerPlugins() {
-  // CORS plugin
+  // CORS plugin - support both development and production origins
+  const allowedOrigins = [
+    "http://localhost:3000", 
+    "http://127.0.0.1:3000",
+    process.env.FRONTEND_URL || "https://your-frontend-domain.vercel.app"
+  ].filter(Boolean);
+
   await fastify.register(require("@fastify/cors"), {
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: allowedOrigins,
     credentials: true,
   });
 
@@ -114,9 +120,12 @@ const start = async () => {
 
     // Start the server
     const port = process.env.PORT || 4000;
-    const host = process.env.HOST || "localhost";
+    const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
 
     await fastify.listen({ port, host });
+    console.log(`🚀 Server running on ${host}:${port}`);
+    console.log(`📝 API endpoints available at http://${host}:${port}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   } catch (err) {
     fastify.log.error("Error starting server:", err);
     process.exit(1);

@@ -1,0 +1,11 @@
+# Railway Deployment Configuration
+# This file helps Railway detect and deploy your Node.js backend
+
+# Build command (if needed)
+# Railway will automatically detect Node.js and run npm install
+
+# Start command
+web: npm start
+
+# Environment
+NODE_ENV=production

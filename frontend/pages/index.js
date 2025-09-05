@@ -4,6 +4,7 @@ import ServiceCard from "../components/ServiceCard";
 import AIDescriptionForm from "../components/AIDescriptionForm";
 import AIQuoteResults from "../components/AIQuoteResults";
 import Navbar from "../components/Navbar";
+import { API_ENDPOINTS } from "../config/api";
 import {
   FaFileContract,
   FaGavel,
@@ -77,7 +78,7 @@ export default function Home() {
       }
 
       const response = await fetch(
-        "http://localhost:4000/api/quotes/ai-quote-with-pdf",
+        API_ENDPOINTS.AI_QUOTE_WITH_PDF,
         {
           method: "POST",
           headers: {
@@ -116,7 +117,7 @@ export default function Home() {
     console.log("Downloading AI PDF from:", aiDocument);
     try {
       const response = await fetch(
-        `http://localhost:4000/api/quotes${aiDocument.downloadUrl}`
+        `${API_ENDPOINTS.BASE_URL}${aiDocument.downloadUrl}`
       );
 
       if (!response.ok) {
@@ -156,7 +157,7 @@ export default function Home() {
         throw new Error("Please provide your name and email.");
 
       const response = await fetch(
-        "http://localhost:4000/api/quotes/quote-with-pdf",
+        API_ENDPOINTS.QUOTE_WITH_PDF,
         {
           method: "POST",
           headers: {
@@ -194,7 +195,7 @@ export default function Home() {
     }
     try {
       const response = await fetch(
-        `http://localhost:4000/api/quotes${quote.document.downloadUrl}`
+        `${API_ENDPOINTS.BASE_URL}${quote.document.downloadUrl}`
       );
 
       if (!response.ok) {

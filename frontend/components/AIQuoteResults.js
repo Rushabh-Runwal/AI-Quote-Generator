@@ -16,7 +16,7 @@ import {
 const AIQuoteResults = ({ quote, document, aiInsights, onDownloadPDF }) => {
   const [expandedSections, setExpandedSections] = useState({
     analysis: false,
-    services: false,
+    services: true, // Show services by default
     report: false,
     terms: false,
   });
@@ -40,89 +40,100 @@ const AIQuoteResults = ({ quote, document, aiInsights, onDownloadPDF }) => {
     return "Low Confidence";
   };
 
+  // Check if this is an AI-generated quote
+  const isAIGenerated = quote?.metadata?.isAIGenerated || false;
+  const hasAIAnalysis =
+    quote?.aiAnalysis && Object.keys(quote.aiAnalysis).length > 0;
+
   return (
     <div className="ai-results-container">
       {/* Header Section */}
       <div className="results-header">
         <div className="header-content">
-          <FaRobot size={32} color="#2a4d8f" />
+          <FaRobot size={32} color="white" />
           <div>
-            <h3>AI-Generated Legal Quote</h3>
+            <h3>
+              {isAIGenerated ? "AI-Generated Legal Quote" : "Legal Quote"}
+            </h3>
             <p>Quote #{quote.quoteId}</p>
           </div>
         </div>
-        <div className="ai-badge">
-          <FaBrain size={16} />
-          <span>AI-Powered</span>
-        </div>
-      </div>
-
-      {/* AI Analysis Section */}
-      <div className="section-card">
-        <div
-          className="section-header clickable"
-          onClick={() => toggleSection("analysis")}
-        >
-          <div className="section-title">
-            <FaBrain size={20} color="#2a4d8f" />
-            <span>AI Analysis of Your Legal Needs</span>
-          </div>
-          {expandedSections.analysis ? <FaChevronUp /> : <FaChevronDown />}
-        </div>
-
-        {expandedSections.analysis && (
-          <div className="section-content">
-            <div className="analysis-grid">
-              <div className="analysis-item">
-                <strong>Original Request:</strong>
-                <p>"{quote.aiAnalysis.originalDescription}"</p>
-              </div>
-              <div className="analysis-item">
-                <strong>AI Summary:</strong>
-                <p>{quote.aiAnalysis.analysis.summary}</p>
-              </div>
-              <div className="analysis-metrics">
-                <div className="metric">
-                  <span className="metric-label">Complexity:</span>
-                  <span
-                    className={`metric-value ${quote.aiAnalysis.analysis.complexity}`}
-                  >
-                    {quote.aiAnalysis.analysis.complexity?.toUpperCase()}
-                  </span>
-                </div>
-                <div className="metric">
-                  <span className="metric-label">Urgency:</span>
-                  <span
-                    className={`metric-value ${quote.aiAnalysis.analysis.urgency}`}
-                  >
-                    {quote.aiAnalysis.analysis.urgency?.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-              {quote.aiAnalysis.analysis.keyConsiderations && (
-                <div className="analysis-item">
-                  <strong>Key Considerations:</strong>
-                  <ul>
-                    {quote.aiAnalysis.analysis.keyConsiderations.map(
-                      (consideration, index) => (
-                        <li key={index}>{consideration}</li>
-                      )
-                    )}
-                  </ul>
-                </div>
-              )}
-              {quote.aiAnalysis.additionalRecommendations && (
-                <div className="analysis-item">
-                  <strong>Additional Recommendations:</strong>
-                  <p>{quote.aiAnalysis.additionalRecommendations}</p>
-                </div>
-              )}
-            </div>
+        {isAIGenerated && (
+          <div className="ai-badge">
+            <FaBrain size={16} />
+            <span>AI-Powered</span>
           </div>
         )}
       </div>
 
-      {/* Recommended Services Section */}
+      {/* AI Analysis Section - Only show if AI analysis exists */}
+      {hasAIAnalysis && (
+        <div className="section-card">
+          <div
+            className="section-header clickable"
+            onClick={() => toggleSection("analysis")}
+          >
+            <div className="section-title">
+              <FaBrain size={20} color="#2a4d8f" />
+              <span>AI Analysis of Your Legal Needs</span>
+            </div>
+            {expandedSections.analysis ? <FaChevronUp /> : <FaChevronDown />}
+          </div>
+
+          {expandedSections.analysis && (
+            <div className="section-content">
+              <div className="analysis-grid">
+                <div className="analysis-item">
+                  <strong>Original Request:</strong>
+                  <p>"{quote.aiAnalysis.originalDescription}"</p>
+                </div>
+                <div className="analysis-item">
+                  <strong>AI Summary:</strong>
+                  <p>{quote.aiAnalysis.analysis.summary}</p>
+                </div>
+                <div className="analysis-metrics">
+                  <div className="metric">
+                    <span className="metric-label">Complexity:</span>
+                    <span
+                      className={`metric-value ${quote.aiAnalysis.analysis.complexity}`}
+                    >
+                      {quote.aiAnalysis.analysis.complexity?.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="metric">
+                    <span className="metric-label">Urgency:</span>
+                    <span
+                      className={`metric-value ${quote.aiAnalysis.analysis.urgency}`}
+                    >
+                      {quote.aiAnalysis.analysis.urgency?.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+                {quote.aiAnalysis.analysis.keyConsiderations && (
+                  <div className="analysis-item">
+                    <strong>Key Considerations:</strong>
+                    <ul>
+                      {quote.aiAnalysis.analysis.keyConsiderations.map(
+                        (consideration, index) => (
+                          <li key={index}>{consideration}</li>
+                        )
+                      )}
+                    </ul>
+                  </div>
+                )}
+                {quote.aiAnalysis.additionalRecommendations && (
+                  <div className="analysis-item">
+                    <strong>Additional Recommendations:</strong>
+                    <p>{quote.aiAnalysis.additionalRecommendations}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Services Section */}
       <div className="section-card">
         <div
           className="section-header clickable"
@@ -130,7 +141,9 @@ const AIQuoteResults = ({ quote, document, aiInsights, onDownloadPDF }) => {
         >
           <div className="section-title">
             <FaFileContract size={20} color="#2a4d8f" />
-            <span>Recommended Services</span>
+            <span>
+              {isAIGenerated ? "Recommended Services" : "Selected Services"}
+            </span>
           </div>
           {expandedSections.services ? <FaChevronUp /> : <FaChevronDown />}
         </div>
@@ -139,34 +152,41 @@ const AIQuoteResults = ({ quote, document, aiInsights, onDownloadPDF }) => {
           <div className="section-content">
             <div className="services-grid">
               {quote.services.map((service, index) => {
-                const aiService = quote.aiAnalysis.recommendedServices.find(
-                  (ai) => ai.value === service.value
-                );
+                // For AI quotes, try to find AI analysis data
+                const aiService = hasAIAnalysis
+                  ? quote.aiAnalysis.recommendedServices?.find(
+                      (ai) => ai.value === service.value
+                    )
+                  : null;
                 const confidence = aiService?.confidence || 0;
 
                 return (
-                  <div key={service.value} className="service-card">
+                  <div key={service.value || index} className="service-card">
                     <div className="service-header">
                       <h4>{service.label}</h4>
-                      <div
-                        className="confidence-badge"
-                        style={{
-                          backgroundColor: getConfidenceColor(confidence),
-                        }}
-                      >
-                        {Math.round(confidence * 100)}%
-                      </div>
+                      {hasAIAnalysis && aiService && (
+                        <div
+                          className="confidence-badge"
+                          style={{
+                            backgroundColor: getConfidenceColor(confidence),
+                          }}
+                        >
+                          {Math.round(confidence * 100)}%
+                        </div>
+                      )}
                     </div>
                     <p className="service-description">{service.description}</p>
                     <div className="service-details">
                       <span className="service-price">
                         ${service.basePrice}
                       </span>
-                      <span className="service-time">
-                        {service.estimatedTime}
-                      </span>
+                      {service.estimatedTime && (
+                        <span className="service-time">
+                          {service.estimatedTime}
+                        </span>
+                      )}
                     </div>
-                    {aiService?.reasoning && (
+                    {hasAIAnalysis && aiService?.reasoning && (
                       <div className="ai-reasoning">
                         <strong>Why recommended:</strong>
                         <p>{aiService.reasoning}</p>
@@ -205,7 +225,7 @@ const AIQuoteResults = ({ quote, document, aiInsights, onDownloadPDF }) => {
         </div>
       </div>
 
-      {/* Enhanced Report Section */}
+      {/* Enhanced Report Section - Only show if exists */}
       {quote.enhancedReport && (
         <div className="section-card">
           <div
@@ -265,7 +285,7 @@ const AIQuoteResults = ({ quote, document, aiInsights, onDownloadPDF }) => {
         </div>
       )}
 
-      {/* State Terms Section */}
+      {/* State Terms Section - Only show if exists */}
       {quote.stateTerms && (
         <div className="section-card">
           <div
@@ -309,11 +329,12 @@ const AIQuoteResults = ({ quote, document, aiInsights, onDownloadPDF }) => {
             <FaCheckCircle size={20} color="#059669" />
             <div>
               <h4>Your Quote is Ready!</h4>
+              <p>Professional PDF with all details included</p>
             </div>
           </div>
           <button onClick={onDownloadPDF} className="download-btn">
             <FaDownload />
-            Download AI Quote PDF
+            Download {isAIGenerated ? "AI Quote" : "Quote"} PDF
           </button>
         </div>
       )}

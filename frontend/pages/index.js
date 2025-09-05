@@ -77,20 +77,17 @@ export default function Home() {
         );
       }
 
-      const response = await fetch(
-        API_ENDPOINTS.AI_QUOTE_WITH_PDF,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userDescription,
-            state,
-            clientInfo,
-          }),
-        }
-      );
+      const response = await fetch(API_ENDPOINTS.AI_QUOTE_WITH_PDF, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userDescription,
+          state,
+          clientInfo,
+        }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -117,7 +114,7 @@ export default function Home() {
     console.log("Downloading AI PDF from:", aiDocument);
     try {
       const response = await fetch(
-        `${API_ENDPOINTS.BASE_URL}${aiDocument.downloadUrl}`
+        `${API_ENDPOINTS.DOWNLOAD_PDF}${aiDocument.downloadUrl}`
       );
 
       if (!response.ok) {
@@ -156,20 +153,17 @@ export default function Home() {
       if (!clientInfo.name || !clientInfo.email)
         throw new Error("Please provide your name and email.");
 
-      const response = await fetch(
-        API_ENDPOINTS.QUOTE_WITH_PDF,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            selectedServices,
-            state,
-            clientInfo,
-          }),
-        }
-      );
+      const response = await fetch(API_ENDPOINTS.QUOTE_WITH_PDF, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          selectedServices,
+          state,
+          clientInfo,
+        }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
